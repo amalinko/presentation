@@ -65,7 +65,7 @@ class AccountService(repository: AccountRepository,
 
   private def forActiveAndExistentAccount(maybeAccount: Option[Account])(f: Account => Account): Account =
     maybeAccount match {
-      case Some(a) if a.confirmedAt.isDefined => f(a)
+      case Some(a) if a.isConfirmed => f(a)
       case _ => throw new Exception
     }
 

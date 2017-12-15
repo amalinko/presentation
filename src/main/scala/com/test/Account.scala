@@ -14,6 +14,6 @@ case class Account(id: UUID,
                    role: Role,
                    createdAt: LocalDateTime,
                    balance: Int = 0,
-                   confirmedAt: Option[LocalDateTime] = None,
+                   isConfirmed: Boolean = false,
                    closedAt: Option[LocalDateTime] = None,
                    closingReason: Option[String] = None)
