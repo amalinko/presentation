@@ -27,4 +27,3 @@ src/test/resources/application.conf
 # see https://github.com/testcontainers/testcontainers-java/issues/423
 /.testcontainers-tmp-*
 .scalafmt.conf
-src/test/
