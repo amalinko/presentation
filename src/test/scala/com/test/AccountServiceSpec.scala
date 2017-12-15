@@ -69,6 +69,18 @@ class AccountServiceSpec extends FlatSpec with ScalaFutures {
     verifyAccountNotSaved()
   }
 
+  "fine" should "subtract point from account's balance" in new Fixture {}
+
+  it should "fail on negative points" in new Fixture {}
+
+  it should "close account if after subtraction balance is negative" in new Fixture {}
+
+  it should "send email if account is closed" in new Fixture {}
+
+  it should "not close account if account has role Moderator or Admin" in new Fixture {}
+
+  it should "fail if account already closed" in new Fixture {}
+
   class Fixture {
     val accountService: AccountService = ???
 
