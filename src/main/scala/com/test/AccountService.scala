@@ -86,14 +86,17 @@ class AccountService(repository: AccountRepository,
     } else {
       val newBalance = account.balance - points
       if (newBalance < 0) {
-        account.copy(
-          closedAt = Some(LocalDateTime.now(clock)),
-          balance = newBalance
-        )
+        if (account.role == Admin || account.role == Moderator) {
+          account.copy(balance = 0)
+        } else {
+          account.copy(
+            closedAt = Some(LocalDateTime.now(clock)),
+            balance = newBalance
+          )
+        }
       } else {
         account.copy(balance = newBalance)
       }
-
     }
   }
 
