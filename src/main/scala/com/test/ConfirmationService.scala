@@ -8,6 +8,8 @@ import scala.concurrent.Future
 class ConfirmationService(repository: AccountRepository,
                           confirmationRepository: ConfirmationRepository,
                           clock: Clock) {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   def startConfirmation(id: UUID, email: String): Future[Unit] = ???
   def confirm(id: UUID, code: String): Future[Unit] = {
     for {

@@ -14,6 +14,8 @@ class AccountService(repository: AccountRepository,
                      emailService: EmailService,
                      clock: Clock) {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   def create(name: String, email: String): Future[UUID] = {
     val id = UUID.randomUUID()
     val createdAt = LocalDateTime.now(clock)
@@ -53,10 +55,7 @@ class AccountService(repository: AccountRepository,
         if (a.closedAt.isDefined) {
           throw new Exception
         } else {
-          a.copy(
-            closedAt = Some(LocalDateTime.now(clock)),
-            closingReason = Some(reason)
-          )
+          a.copy(closedAt = Some(LocalDateTime.now(clock)), closingReason = Some(reason))
         }
       }
       _ <- repository.save(updatedAccount)
@@ -64,11 +63,11 @@ class AccountService(repository: AccountRepository,
     } yield ()
   }
 
-  private def forActiveAndExistentAccount(maybeAccount: Option[Account])(
-      f: Account => Account): Account = maybeAccount match {
-    case Some(a) if a.confirmedAt.isDefined => f(a)
-    case _                                  => throw Exception
-  }
+  private def forActiveAndExistentAccount(maybeAccount: Option[Account])(f: Account => Account): Account =
+    maybeAccount match {
+      case Some(a) if a.confirmedAt.isDefined => f(a)
+      case _ => throw new Exception
+    }
 
   private def addToBalance(account: Account, points: Int): Account = {
     if (points < 0) {
@@ -89,10 +88,7 @@ class AccountService(repository: AccountRepository,
         if (account.role == Admin || account.role == Moderator) {
           account.copy(balance = 0)
         } else {
-          account.copy(
-            closedAt = Some(LocalDateTime.now(clock)),
-            balance = newBalance
-          )
+          account.copy(closedAt = Some(LocalDateTime.now(clock)), balance = newBalance)
         }
       } else {
         account.copy(balance = newBalance)
@@ -102,9 +98,7 @@ class AccountService(repository: AccountRepository,
 
   private def sendMailIfClosed(account: Account): Future[Unit] = {
     if (account.closedAt.nonEmpty) {
-      emailService.sendEmail(
-        account.email,
-        body = "Yours account has been closed for inappropriate behavior")
+      emailService.sendEmail(account.email, body = "Yours account has been closed for inappropriate behavior")
     } else {
       Future.successful(())
     }
@@ -112,8 +106,7 @@ class AccountService(repository: AccountRepository,
 
   private def sendMailIfAccountHasMaxBalance(account: Account): Future[Unit] = {
     if (account.balance >= AccountService.MaxBalance) {
-      emailService.sendEmail(account.email,
-                             body = "You are great user. Thank you!")
+      emailService.sendEmail(account.email, body = "You are great user. Thank you!")
     } else {
       Future.successful(())
     }
