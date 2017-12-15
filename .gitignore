@@ -1,2 +1,30 @@
-*.class
-*.log
+target/
+boot/
+lib_managed/
+src_managed/
+project/plugins/project/
+/.idea
+### Java template
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+src/main/resources/application.conf
+scripts/src/main/resources/application.conf
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+/native
+project/project/
+sbt
+sbt/
+src/test/resources/application.conf
+
+# testcontainers tmp stuff
+# see https://github.com/testcontainers/testcontainers-java/issues/423
+/.testcontainers-tmp-*
+.scalafmt.conf
+src/test/
