@@ -17,5 +17,7 @@ case class Closed(createdAt: LocalDateTime, closedAt: LocalDateTime, closingReas
 
 sealed trait AccountEvent extends Event
 case class AccountCreated(id: UUID) extends AccountEvent
+case class AccountClosed(id: UUID) extends AccountEvent
+case class AccountHasMaxBalance(id: UUID) extends AccountEvent
 
 case class Account(id: UUID, name: String, email: Email, role: Role, balance: Int, accountState: AccountState)

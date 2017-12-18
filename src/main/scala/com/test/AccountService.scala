@@ -12,7 +12,6 @@ object AccountService {
 class AccountService(idFactory: () => UUID,
                      repository: AccountRepository,
                      eventDispatcher: EventDispatcher,
-                     emailService: EmailService,
                      clock: Clock) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -34,7 +33,7 @@ class AccountService(idFactory: () => UUID,
         addToBalance(a, points)
       }
       _ <- repository.save(updatedAccount)
-      _ <- sendMailIfAccountHasMaxBalance(updatedAccount)
+      _ <- postEventIfAccountHasMaxBalance(updatedAccount)
     } yield ()
   }
 
@@ -45,7 +44,7 @@ class AccountService(idFactory: () => UUID,
         removeFromBalance(a, points)
       }
       _ <- repository.save(updatedAccount)
-      _ <- sendMailIfClosed(updatedAccount)
+      _ <- postEventIfClosed(updatedAccount)
     } yield ()
   }
 
@@ -59,7 +58,7 @@ class AccountService(idFactory: () => UUID,
         }
       }
       _ <- repository.save(updatedAccount)
-      _ <- sendMailIfClosed(updatedAccount)
+      _ <- postEventIfClosed(updatedAccount)
     } yield ()
   }
 
@@ -103,18 +102,18 @@ class AccountService(idFactory: () => UUID,
     }
   }
 
-  private def sendMailIfClosed(account: Account): Future[Unit] = {
+  private def postEventIfClosed(account: Account): Future[Unit] = {
     account.accountState match {
       case _: Closed =>
-        emailService.sendEmail(account.email, body = "Yours account has been closed for inappropriate behavior")
+        eventDispatcher.dispatch(AccountClosed(account.id))
       case _ =>
         Future.successful(())
     }
   }
 
-  private def sendMailIfAccountHasMaxBalance(account: Account): Future[Unit] = {
+  private def postEventIfAccountHasMaxBalance(account: Account): Future[Unit] = {
     if (account.balance >= AccountService.MaxBalance) {
-      emailService.sendEmail(account.email, body = "You are great user. Thank you!")
+      eventDispatcher.dispatch(AccountHasMaxBalance(account.id))
     } else {
       Future.successful(())
     }

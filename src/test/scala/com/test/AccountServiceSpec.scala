@@ -1,16 +1,21 @@
 package com.test
 
+import java.util.UUID
+
 import org.scalatest.FlatSpec
 import org.scalatest.concurrent.ScalaFutures
 
 class AccountServiceSpec extends FlatSpec with ScalaFutures {
 
   "create" should "save created account and start confirmation" in new Fixture {
+    val id = UUID.randomUUID()
     val expectedAccount: Account = ???
     givenAccountCanBeSaved(expectedAccount)
-    givenConfirmationCanBeStarted("example@email.com")
+    givenEventCanBePosted()
 
     accountService.create("some name", Email("example@email.com")).futureValue
+
+    verifyEventPosted(AccountCreated(id))
   }
 
   "encourage" should "add points to user balance" in new Fixture {
@@ -38,25 +43,25 @@ class AccountServiceSpec extends FlatSpec with ScalaFutures {
     val expectedAccount = account.copy(balance = AccountService.MaxBalance)
     givenThereIsAccount(account)
     givenAccountCanBeSaved(expectedAccount)
-    givenEmailCanBeSent()
+    givenEventCanBePosted()
 
     accountService
       .encourage(account.id, AccountService.MaxBalance + 1)
       .futureValue
   }
 
-  it should "send email if balance reached max value" in new Fixture {
+  it should "dispatch event if balance reached max value" in new Fixture {
     val account: Account = ???
     val expectedAccount = account.copy(balance = AccountService.MaxBalance)
     givenThereIsAccount(account)
     givenAccountCanBeSaved(expectedAccount)
-    givenEmailCanBeSent()
+    givenEventCanBePosted()
 
     accountService
       .encourage(account.id, AccountService.MaxBalance + 1)
       .futureValue
 
-    verifyEmailSent(account.email, "You are great user. Thank you!")
+    verifyEventPosted(AccountHasMaxBalance(account.id))
   }
 
   it should "throw error if account is not confirmed" in new Fixture {
@@ -86,9 +91,8 @@ class AccountServiceSpec extends FlatSpec with ScalaFutures {
 
     def givenThereIsAccount(account: Account) = ???
     def givenAccountCanBeSaved(expectedAccount: Account) = ???
-    def givenConfirmationCanBeStarted(email: String) = ???
-    def givenEmailCanBeSent() = ???
-    def verifyEmailSent(email: Email, body: String) = ???
+    def givenEventCanBePosted() = ???
+    def verifyEventPosted(event: Event) = ???
     def verifyAccountNotSaved() = ???
   }
 
