@@ -10,7 +10,7 @@ class AccountServiceSpec extends FlatSpec with ScalaFutures {
     givenAccountCanBeSaved(expectedAccount)
     givenConfirmationCanBeStarted("example@email.com")
 
-    accountService.create("some name", "example@email.com").futureValue
+    accountService.create("some name", Email("example@email.com")).futureValue
   }
 
   "encourage" should "add points to user balance" in new Fixture {
@@ -88,7 +88,7 @@ class AccountServiceSpec extends FlatSpec with ScalaFutures {
     def givenAccountCanBeSaved(expectedAccount: Account) = ???
     def givenConfirmationCanBeStarted(email: String) = ???
     def givenEmailCanBeSent() = ???
-    def verifyEmailSent(email: String, body: String) = ???
+    def verifyEmailSent(email: Email, body: String) = ???
     def verifyAccountNotSaved() = ???
   }
 

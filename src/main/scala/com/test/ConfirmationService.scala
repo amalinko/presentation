@@ -8,7 +8,7 @@ import scala.concurrent.Future
 class ConfirmationService(repository: AccountRepository, confirmationRepository: ConfirmationRepository, clock: Clock) {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def startConfirmation(id: UUID, email: String): Future[Unit] = ???
+  def startConfirmation(id: UUID, email: Email): Future[Unit] = ???
   def confirm(id: UUID, code: String): Future[Unit] = {
     for {
       maybeAccount <- repository.find(id)
@@ -23,8 +23,10 @@ class ConfirmationService(repository: AccountRepository, confirmationRepository:
   }
 
   private def doConfirm(account: Account, code: String, existentCode: String): Account = {
-    if (account.isConfirmed && account.closedAt.isEmpty && code == existentCode)
-      account.copy(isConfirmed = true)
-    else throw new Exception
+    account.accountState match {
+      case NotConfirmed(createdAt) =>
+        account.copy(accountState = Active(createdAt))
+      case _ => throw new Exception
+    }
   }
 }

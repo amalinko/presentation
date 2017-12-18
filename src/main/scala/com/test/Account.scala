@@ -8,12 +8,11 @@ case object Admin extends Role
 case object Moderator extends Role
 case object User extends Role
 
-case class Account(id: UUID,
-                   name: String,
-                   email: String,
-                   role: Role,
-                   createdAt: LocalDateTime,
-                   balance: Int = 0,
-                   isConfirmed: Boolean = false,
-                   closedAt: Option[LocalDateTime] = None,
-                   closingReason: Option[String] = None)
+sealed trait AccountState{
+  def createdAt: LocalDateTime
+}
+case class NotConfirmed(createdAt: LocalDateTime) extends AccountState
+case class Active(createdAt: LocalDateTime) extends AccountState
+case class Closed(createdAt: LocalDateTime, closedAt: LocalDateTime, closingReason: String) extends AccountState
+
+case class Account(id: UUID, name: String, email: Email, role: Role, balance: Int, accountState: AccountState)
