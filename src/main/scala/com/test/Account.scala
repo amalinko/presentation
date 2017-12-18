@@ -15,4 +15,7 @@ case class NotConfirmed(createdAt: LocalDateTime) extends AccountState
 case class Active(createdAt: LocalDateTime) extends AccountState
 case class Closed(createdAt: LocalDateTime, closedAt: LocalDateTime, closingReason: String) extends AccountState
 
+sealed trait AccountEvent extends Event
+case class AccountCreated(id: UUID) extends AccountEvent
+
 case class Account(id: UUID, name: String, email: Email, role: Role, balance: Int, accountState: AccountState)

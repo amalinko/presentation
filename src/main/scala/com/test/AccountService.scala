@@ -9,20 +9,21 @@ object AccountService {
   val MaxBalance = 1000
 }
 
-class AccountService(repository: AccountRepository,
-                     confirmationService: ConfirmationService,
+class AccountService(idFactory: () => UUID,
+                     repository: AccountRepository,
+                     eventDispatcher: EventDispatcher,
                      emailService: EmailService,
                      clock: Clock) {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def create(name: String, email: Email): Future[UUID] = {
-    val id = UUID.randomUUID()
+    val id = idFactory()
     val createdAt = LocalDateTime.now(clock)
     val account = Account(id, name, email, role = User, balance = 0, accountState = NotConfirmed(createdAt))
     for {
       _ <- repository.save(account)
-      _ <- confirmationService.startConfirmation(id, email)
+      _ <- eventDispatcher.dispatch(AccountCreated(id))
     } yield id
   }
 
