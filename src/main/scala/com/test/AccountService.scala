@@ -1,6 +1,6 @@
 package com.test
 
-import java.time.{Clock, LocalDateTime}
+import java.time.Clock
 import java.util.UUID
 
 import scala.concurrent.Future
@@ -18,105 +18,36 @@ class AccountService(idFactory: () => UUID,
 
   def create(name: String, email: Email): Future[UUID] = {
     val id = idFactory()
-    val createdAt = LocalDateTime.now(clock)
-    val account = Account(id, name, email, role = User, balance = 0, accountState = NotConfirmed(createdAt))
+    val account = Account.create(id, name, email, role = User, clock = clock)
     for {
       _ <- repository.save(account)
       _ <- eventDispatcher.dispatch(AccountCreated(id))
     } yield id
   }
 
-  def encourage(id: UUID, points: Int): Future[Unit] = {
+  def encourage(id: UUID, points: Int): Future[Unit] = updateExistingAccount(id) { account =>
+    account.encourage(points)
+  }
+
+  def fine(id: UUID, points: Int): Future[Unit] = updateExistingAccount(id) { account =>
+    account.fine(points, clock)
+  }
+
+  def close(id: UUID, reason: String): Future[Unit] = updateExistingAccount(id) { account =>
+    account.close(reason, clock)
+  }
+
+  private def updateExistingAccount(id: UUID)(f: Account => (Account, Option[Event])): Future[Unit] = {
     for {
       maybeAccount <- repository.find(id)
-      updatedAccount = forActiveAndExistentAccount(maybeAccount) { a =>
-        addToBalance(a, points)
+      account = maybeAccount.getOrElse(throw new Exception)
+      (updated, maybeEvent) = f(account)
+      _ <- repository.save(updated)
+      _ <- maybeEvent match {
+        case Some(event) => eventDispatcher.dispatch(event)
+        case None => Future.unit
       }
-      _ <- repository.save(updatedAccount)
-      _ <- postEventIfAccountHasMaxBalance(updatedAccount)
     } yield ()
-  }
-
-  def fine(id: UUID, points: Int): Future[Unit] = {
-    for {
-      maybeAccount <- repository.find(id)
-      updatedAccount = forActiveAndExistentAccount(maybeAccount) { a =>
-        removeFromBalance(a, points)
-      }
-      _ <- repository.save(updatedAccount)
-      _ <- postEventIfClosed(updatedAccount)
-    } yield ()
-  }
-
-  def close(id: UUID, reason: String): Future[Unit] = {
-    for {
-      maybeAccount <- repository.find(id)
-      updatedAccount = forActiveAndExistentAccount(maybeAccount) { a =>
-        a.accountState match {
-          case _: Closed => throw new Exception
-          case other => a.copy(accountState = Closed(other.createdAt, LocalDateTime.now(clock), reason))
-        }
-      }
-      _ <- repository.save(updatedAccount)
-      _ <- postEventIfClosed(updatedAccount)
-    } yield ()
-  }
-
-  private def forActiveAndExistentAccount(maybeAccount: Option[Account])(f: Account => Account): Account =
-    maybeAccount match {
-      case Some(a) =>
-        a.accountState match {
-          case _: Active => f(a)
-          case _ => throw new Exception
-        }
-      case _ => throw new Exception
-    }
-
-  private def addToBalance(account: Account, points: Int): Account = {
-    if (points < 0) {
-      throw new Exception
-    } else {
-      val newBalance =
-        Math.min(account.balance + points, AccountService.MaxBalance)
-      account.copy(balance = newBalance)
-    }
-  }
-
-  private def removeFromBalance(account: Account, points: Int): Account = {
-    if (points < 0) {
-      throw new Exception
-    } else {
-      val newBalance = account.balance - points
-      if (newBalance < 0) {
-        if (account.role == Admin || account.role == Moderator) {
-          account.copy(balance = 0)
-        } else {
-          account.copy(
-            accountState = Closed(account.accountState.createdAt, LocalDateTime.now(clock), "Bad user"),
-            balance = newBalance
-          )
-        }
-      } else {
-        account.copy(balance = newBalance)
-      }
-    }
-  }
-
-  private def postEventIfClosed(account: Account): Future[Unit] = {
-    account.accountState match {
-      case _: Closed =>
-        eventDispatcher.dispatch(AccountClosed(account.id))
-      case _ =>
-        Future.successful(())
-    }
-  }
-
-  private def postEventIfAccountHasMaxBalance(account: Account): Future[Unit] = {
-    if (account.balance >= AccountService.MaxBalance) {
-      eventDispatcher.dispatch(AccountHasMaxBalance(account.id))
-    } else {
-      Future.successful(())
-    }
   }
 
 }
