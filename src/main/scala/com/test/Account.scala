@@ -10,6 +10,10 @@ case object User extends Role
 
 sealed trait AccountState {
   def createdAt: LocalDateTime
+  def close(reason: String, clock: Clock): Closed = this match {
+    case _: Closed => throw new Exception
+    case _ => Closed(createdAt, LocalDateTime.now(clock), reason)
+  }
 }
 case class NotConfirmed(createdAt: LocalDateTime) extends AccountState
 case class Active(createdAt: LocalDateTime) extends AccountState
@@ -41,35 +45,24 @@ case class Account(id: UUID, name: String, email: Email, role: Role, balance: In
   }
 
   def fine(points: Int, clock: Clock): (Account, Option[AccountEvent]) = {
-    val updated = if (points < 0) {
+    if (points < 0) {
       throw new Exception
     } else {
       val newBalance = balance - points
       if (newBalance < 0) {
         if (role == Admin || role == Moderator) {
-          copy(balance = 0)
+          (copy(balance = 0), None)
         } else {
-          copy(
-            accountState = Closed(accountState.createdAt, LocalDateTime.now(clock), "Bad user"),
-            balance = newBalance
-          )
+          val closed = copy(accountState = accountState.close("Bad user", clock), balance = newBalance)
+          (closed, Some(AccountClosed(id)))
         }
       } else {
-        copy(balance = newBalance)
+        (copy(balance = newBalance), None)
       }
-    }
-    updated.accountState match {
-      case _: Closed => (updated, Some(AccountClosed(id)))
-      case _ => (updated, None)
     }
   }
 
-  def close(reason: String, clock: Clock): (Account, Option[AccountEvent]) = accountState match {
-    case _: Closed =>
-      throw new Exception
-    case other =>
-      val closed = copy(accountState = Closed(other.createdAt, LocalDateTime.now(clock), reason))
-      (closed, Some(AccountClosed(id)))
-  }
+  def close(reason: String, clock: Clock): (Account, Option[AccountEvent]) =
+    (copy(accountState = accountState.close(reason, clock)), Some(AccountClosed(id)))
 
 }
