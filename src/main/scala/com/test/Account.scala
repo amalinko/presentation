@@ -38,7 +38,7 @@ case class Account(id: UUID, name: String, email: Email, role: Role, balance: In
     if (points < 0) {
       throw new Exception
     } else {
-      val newBalance = Math.min(balance + points, AccountService.MaxBalance)
+      val newBalance = Math.min(balance + points, Account.MaxBalance)
       val updated = copy(balance = newBalance)
       if (updated.balance == Account.MaxBalance) (updated, Some(AccountHasMaxBalance(id))) else (updated, None)
     }

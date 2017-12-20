@@ -5,10 +5,6 @@ import java.util.UUID
 
 import scala.concurrent.Future
 
-object AccountService {
-  val MaxBalance = 1000
-}
-
 class AccountService(idFactory: () => UUID,
                      repository: AccountRepository,
                      eventDispatcher: EventDispatcher,
