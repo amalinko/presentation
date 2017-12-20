@@ -25,19 +25,19 @@ class AccountService(idFactory: () => UUID,
     } yield id
   }
 
-  def encourage(id: UUID, points: Int): Future[Unit] = updateExistingAccount(id) { account =>
+  def encourage(id: UUID, points: Int): Future[Unit] = updateExistentAccount(id) { account =>
     account.encourage(points)
   }
 
-  def fine(id: UUID, points: Int): Future[Unit] = updateExistingAccount(id) { account =>
+  def fine(id: UUID, points: Int): Future[Unit] = updateExistentAccount(id) { account =>
     account.fine(points, clock)
   }
 
-  def close(id: UUID, reason: String): Future[Unit] = updateExistingAccount(id) { account =>
+  def close(id: UUID, reason: String): Future[Unit] = updateExistentAccount(id) { account =>
     account.close(reason, clock)
   }
 
-  private def updateExistingAccount(id: UUID)(f: Account => (Account, Option[Event])): Future[Unit] = {
+  private def updateExistentAccount(id: UUID)(f: Account => (Account, Option[Event])): Future[Unit] = {
     for {
       maybeAccount <- repository.find(id)
       account = maybeAccount.getOrElse(throw new Exception)
