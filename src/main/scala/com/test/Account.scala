@@ -14,6 +14,10 @@ sealed trait AccountState {
     case _: Closed => throw new Exception
     case _ => Closed(createdAt, LocalDateTime.now(clock), reason)
   }
+  def confirm(): Active = this match {
+    case _: NotConfirmed => Active(createdAt)
+    case _ => throw new Exception
+  }
 }
 case class NotConfirmed(createdAt: LocalDateTime) extends AccountState
 case class Active(createdAt: LocalDateTime) extends AccountState
@@ -64,5 +68,7 @@ case class Account(id: UUID, name: String, email: Email, role: Role, balance: In
 
   def close(reason: String, clock: Clock): (Account, Option[AccountEvent]) =
     (copy(accountState = accountState.close(reason, clock)), Some(AccountClosed(id)))
+
+  def confirm(): Account = copy(accountState = accountState.confirm())
 
 }
